@@ -237,8 +237,12 @@ g_type_check_instance_is_fundamentally_a(GTypeClass *instance, GType fundamental
 
 static void* g_object_new(GType type, const gchar *first_property_name, ...)
 {
-	GObject *obj = g_malloc(sizeof(GObject));
-	obj->ref_count = 1;
+	GTypeClass *klass = &g_typePool.classes[type];
+	GObject *obj = g_malloc(g_typePool.pool[type].object_size);
+	g_assert(obj);
+	if (g_type_check_instance_is_fundamentally_a(klass, G_TYPE_OBJECT)) {
+		obj->ref_count = 1;
+	}
 
 	if (g_typePool.pool[type].instance_init)
 		g_typePool.pool[type].instance_init(obj, NULL);
