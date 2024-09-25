@@ -2,5 +2,5 @@
 
 int main()
 {
-    
+	g_type_init();
 }
