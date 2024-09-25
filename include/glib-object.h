@@ -215,6 +215,26 @@ static void g_object_unref_actual(GObject *obj)
 	}
 }
 
+static bool
+g_type_check_instance_is_fundamentally_a(GTypeClass *instance, GType fundamental_type)
+{
+	// Iterate through the class hierarchy
+	GTypeClass *klass = instance;
+	while (klass) {
+		GTypeClass *next = g_type_class_peek_parent(klass);
+		if (next) {
+			klass = next;
+		} else {
+			// We reached the top of the hierarchy
+			if (klass->type == fundamental_type) {
+				return true;
+			}
+			return false;
+		}
+	}
+	return false;
+}
+
 static void* g_object_new(GType type, const gchar *first_property_name, ...)
 {
 	GObject *obj = g_malloc(sizeof(GObject));
