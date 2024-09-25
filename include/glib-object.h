@@ -25,6 +25,7 @@ typedef struct _GTypeInterface
 typedef void (*GBaseInitFunc)();
 typedef void (*GBaseFinalizeFunc)();
 typedef void (*GClassInitFunc)(gpointer klass, gpointer class_data);
+typedef void (*GClassFinalizeFunc)(gpointer klass, gpointer class_data);
 typedef void (*GInstanceInitFunc)(gpointer object, gpointer klass);
 
 typedef struct _GTypeInfo
@@ -33,6 +34,7 @@ typedef struct _GTypeInfo
     GBaseInitFunc base_init_func;
     GBaseFinalizeFunc base_finalize_func;
     GClassInitFunc class_init_func;
+    GClassFinalizeFunc class_finalize_func;
     gconstpointer class_data;
     guint16 object_size;
     guint16 preallocs;
@@ -118,6 +120,7 @@ static void g_type_init()
         .base_init_func = 0,
         .base_finalize_func = 0,
         .class_init_func = 0,
+        .class_finalize_func = 0,
         .class_data = 0,
         .object_size = sizeof(GObject),
         .preallocs = 0,
