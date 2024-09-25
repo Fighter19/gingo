@@ -28,6 +28,9 @@ typedef void (*GClassInitFunc)(gpointer klass, gpointer class_data);
 typedef void (*GClassFinalizeFunc)(gpointer klass, gpointer class_data);
 typedef void (*GInstanceInitFunc)(gpointer object, gpointer klass);
 
+typedef void (*GInterfaceInitFunc)(gpointer interface, gpointer interface_data);
+typedef void (*GInterfaceFinalizeFunc)();
+
 typedef struct _GTypeInfo
 {
     guint16 class_size;
@@ -41,6 +44,12 @@ typedef struct _GTypeInfo
     GInstanceInitFunc instance_init;
     gpointer *_unused;
 } GTypeInfo;
+
+typedef struct _GInterfaceInfo
+{
+    GInterfaceInitFunc interface_init_func;
+    GInterfaceFinalizeFunc interface_finalize_func;
+} GInterfaceInfo;
 
 /*
     GTypeInterface *type_interface;
@@ -100,7 +109,7 @@ typedef enum _GTypeFlags
     TYPE_FLAG_NONE
 } GTypeFlags;
 
-#define G_TYPE_GOBJECT 0
+#define G_TYPE_OBJECT 0
 #define G_TYPE_INTERFACE 1
 
 static GType g_type_register_static(GType parent,
@@ -128,7 +137,7 @@ static void g_type_init()
         ._unused = 0
     };
     
-    g_typePool.pool[G_TYPE_GOBJECT] = g_object_type_info;
+    g_typePool.pool[G_TYPE_OBJECT] = g_object_type_info;
 }
 
 
