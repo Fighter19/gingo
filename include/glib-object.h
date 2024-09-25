@@ -1,8 +1,10 @@
 #pragma once
 #include <stdlib.h>
+#include <stdbool.h>
+#include <assert.h>
 
 #define G_GNUC_CONST
-#define G_ASSERT(x)
+#define g_assert assert
 
 typedef int gint;
 typedef unsigned int gsize;
@@ -72,8 +74,8 @@ static void g_free(void *ptr)
 
 void g_object_unref(GObject *obj)
 {
-	G_ASSERT(obj);
-	G_ASSERT(obj->ref_count > 0);
+	g_assert(obj);
+	g_assert(obj->ref_count > 0);
 
 	obj->ref_count--;
 
@@ -105,12 +107,12 @@ static GType g_type_register_static(GType parent, const gchar *type_name,
 				    GTypeFlags flags)
 {
 	// Handle G_TYPE_OBJECT and G_TYPE_INTERFACE
-	G_ASSERT(false);
+	g_assert(false);
 }
 
 static void g_type_init()
 {
-	G_ASSERT(g_typePool.last == 0);
+	g_assert(g_typePool.last == 0);
 	static const GTypeInfo g_object_type_info = {
 		.class_size = sizeof(GObjectClass),
 		.base_init_func = 0,
