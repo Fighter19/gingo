@@ -92,8 +92,13 @@ struct _GTypePool {
 
 typedef enum _GTypeFlags { TYPE_FLAG_NONE } GTypeFlags;
 
-#define G_TYPE_OBJECT 0
-#define G_TYPE_INTERFACE 1
+enum BuiltinTypes
+{
+	G_TYPE_OBJECT,
+	G_TYPE_INTERFACE,
+
+	G_TYPE_BUILTIN_COUNT
+};
 
 static GType g_type_register_static(GType parent, const gchar *type_name,
 				    const GTypeInfo *type_info,
@@ -118,8 +123,22 @@ static void g_type_init()
 		.instance_init = 0,
 		._unused = 0
 	};
+    static const GTypeInfo g_interface_type_info = {
+        .class_size = sizeof(GObjectClass),
+		.base_init_func = 0,
+		.base_finalize_func = 0,
+		.class_init_func = 0,
+		.class_finalize_func = 0,
+		.class_data = 0,
+		.object_size = sizeof(GObject),
+		.preallocs = 0,
+		.instance_init = 0,
+		._unused = 0
+    };
 
 	g_typePool.pool[G_TYPE_OBJECT] = g_object_type_info;
+	g_typePool.pool[G_TYPE_INTERFACE] = g_interface_type_info;
+	g_typePool.last = G_TYPE_BUILTIN_COUNT;
 }
 
 static gpointer private_g_type_get_interface(GType type)
@@ -132,4 +151,4 @@ static gpointer private_g_type_get_interface(GType type)
 #define g_return_val_if_fail(cond, val) \
 	if (!(cond))                    \
 		return val;
-#define G_TYPE_INSTANCE_GET_INTERFACE(obj, type_id, interface_name)
+#define G_TYPE_INSTANCE_GET_INTERFACE(obj, type_id, interface_name) private_g_type_get_interface(type_id)
