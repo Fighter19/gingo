@@ -349,12 +349,12 @@ g_type_check_instance_is_fundamentally_a(GTypeClass *instance, GType fundamental
 }
 
 static bool
-g_type_check_instance_is_a(GTypeInstance *instance, GType type)
+g_type_check_type_is_a(GType derived, GType base)
 {
-  // Iterate through the class hierarchy
+  // Iterate through the class hierarchy (assuming single inheritance)
   GTypeClass *klass;
-  for (klass = g_type_get_class(instance->type); klass; klass = g_type_class_peek_parent(klass)) {
-    if (klass->type == type) {
+  for (klass = g_type_get_class(derived); klass; klass = g_type_class_peek_parent(klass)) {
+    if (klass->type == base) {
       return true;
     }
   }
@@ -364,13 +364,12 @@ static void* g_object_new(GType type, const gchar *first_property_name, ...)
 {
 	// g_type_init() should be called before this function
 	assert(g_typePool.last >= G_TYPE_BUILTIN_COUNT);
-	GTypeClass *klass = &g_typePool.classes[type];
 	GObject *obj = g_malloc(g_typePool.pool[type].object_size);
 	g_assert(obj);
-	if (g_type_check_instance_is_a(klass, G_TYPE_TYPE)) {
+	if (g_type_check_type_is_a(type, G_TYPE_TYPE)) {
 		obj->base.type = type;
 	}
-	if (g_type_check_instance_is_a(klass, G_TYPE_OBJECT)) {
+	if (g_type_check_type_is_a(type, G_TYPE_OBJECT)) {
 		obj->ref_count = 1;
 	}
 
