@@ -42,6 +42,8 @@ typedef struct _GTypeInfo {
 typedef struct _GInterfaceInfo {
 	GInterfaceInitFunc interface_init_func;
 	GInterfaceFinalizeFunc interface_finalize_func;
+	void *_unused;
+	void *_unused2;
 } GInterfaceInfo;
 
 /*
@@ -53,13 +55,13 @@ typedef int GType;
 
 typedef struct _GTypeClass {
 	GType type;
-	GType parent;
-	GInterfaceInfo *info;
+	struct _GTypeClass *parent;
+	const GInterfaceInfo *info;
 } GTypeClass;
 
 typedef struct _GTypeInterface {
 	GType type;
-	GType parent;
+	struct _GTypeInterface *parent;
 } GTypeInterface;
 
 typedef struct _GObjectClass {
@@ -112,14 +114,16 @@ static void g_type_add_interface_static(GType instance_type, GType interface_typ
 	g_typePool.classes[instance_type].info = info;
 }
 
-static GType g_type_class_peek_parent(GTypeClass *g_class)
+#define g_type_class_peek_parent(klass) g_type_class_peek_parent_actual((GTypeClass*)klass)
+static GTypeClass *g_type_class_peek_parent_actual(GTypeClass *klass)
 {
-	return g_class->parent;
+	return klass->parent;
 }
 
-static GType g_type_interface_peek_parent(GTypeInterface *g_iface)
+#define g_type_interface_peek_parent(interface) (gpointer)g_type_interface_peek_parent_actual((GTypeInterface*)interface)
+static GTypeInterface *g_type_interface_peek_parent_actual(GTypeInterface *interface)
 {
-	return g_iface->parent;
+	return interface->parent;
 }
 
 static void g_type_init()
@@ -152,7 +156,13 @@ static void g_type_init()
 
 	g_typePool.pool[G_TYPE_OBJECT] = g_object_type_info;
 	g_typePool.pool[G_TYPE_INTERFACE] = g_interface_type_info;
-	g_typePool.classes[G_TYPE_OBJECT].parent = G_TYPE_INTERFACE;
+	// TODO: Can we avoid specifying type here again, or maybe we can get rid of the other pool
+	g_typePool.classes[G_TYPE_OBJECT].type = G_TYPE_OBJECT;
+	g_typePool.classes[G_TYPE_INTERFACE].type = G_TYPE_INTERFACE;
+
+	g_typePool.classes[G_TYPE_OBJECT].parent = NULL;
+	g_typePool.classes[G_TYPE_INTERFACE].parent = NULL;
+
 	g_typePool.last = G_TYPE_BUILTIN_COUNT;
 }
 
@@ -169,7 +179,7 @@ static gpointer private_g_type_get_interface(GType type)
 #define G_TYPE_INSTANCE_GET_INTERFACE(obj, type_id, interface_name) private_g_type_get_interface(type_id)
 
 // These functions are probably implemented in a thread-safe way in a multi-threaded environment
-static bool g_once_init_enter(gsize *location)
+static bool g_once_init_enter(volatile gsize *location)
 {
 	if (*location == 0) {
 		return true;
@@ -177,7 +187,7 @@ static bool g_once_init_enter(gsize *location)
 	return false;
 }
 
-static void g_once_init_leave(gsize *location, int value)
+static void g_once_init_leave(volatile gsize *location, int value)
 {
 	*location = value;
 }
@@ -190,7 +200,9 @@ static void g_object_ref(GObject *obj)
 	obj->ref_count++;
 }
 
-static void g_object_unref(GObject *obj)
+#define g_object_unref(obj) g_object_unref_actual((GObject*)obj)
+
+static void g_object_unref_actual(GObject *obj)
 {
 	g_assert(obj);
 	g_assert(obj->ref_count > 0);

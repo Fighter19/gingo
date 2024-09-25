@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 gchar *g_strconcat(const gchar *string1, ...)
 {
