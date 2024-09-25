@@ -19,3 +19,10 @@ gchar *g_strconcat(const gchar *string1, ...)
   va_end(args);
   return result;
 }
+
+gchar *g_strdup(const gchar *string)
+{
+  return strdup(string);
+}
+
+#define g_print printf
