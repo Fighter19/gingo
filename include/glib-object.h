@@ -235,6 +235,10 @@ __attribute__((constructor)) static void g_type_init()
 	g_typePool.classes[G_TYPE_OBJECT].parent = &g_typePool.classes[G_TYPE_TYPE];
 	g_typePool.classes[G_TYPE_INTERFACE].parent = NULL;
 
+  g_typePool.type_names[G_TYPE_TYPE] = "GTypeInstance";
+  g_typePool.type_names[G_TYPE_OBJECT] = "GObject";
+  g_typePool.type_names[G_TYPE_INTERFACE] = "GInterface";
+
 	g_typePool.last = G_TYPE_BUILTIN_COUNT;
 }
 
