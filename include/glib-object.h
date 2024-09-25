@@ -243,6 +243,11 @@ static GTypeClass *g_type_get_class(GType type)
   return &g_typePool.classes[type];
 }
 
+static GTypeInfo *g_type_get_type_info(GType type)
+{
+  return &g_typePool.pool[type];
+}
+
 static gpointer private_g_type_get_interface(GTypeInstance *obj, GType type, gsize vtable_size)
 {
   GTypeClass *klass = g_type_get_class(obj->type);
@@ -252,7 +257,15 @@ static gpointer private_g_type_get_interface(GTypeInstance *obj, GType type, gsi
       entry->vtable_size = vtable_size;
       // Lazily initialize the vtable (I haven't found another way to obtain the vtable size)
       if (entry->vtable == NULL) {
-        entry->vtable = g_malloc_static(vtable_size);  
+        entry->vtable = g_malloc_static(vtable_size);
+        GTypeInfo *class_type_info = g_type_get_type_info(type);
+        g_assert(class_type_info);
+        if (class_type_info->class_init_func) {
+          class_type_info->class_init_func(
+            entry->vtable, 
+            entry->info->user_data
+          );
+        }
         entry->info->interface_init_func(
           entry->vtable, 
           entry->info->user_data
