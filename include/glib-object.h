@@ -26,6 +26,7 @@ typedef void (*GInstanceInitFunc)(gpointer object, gpointer klass);
 typedef void (*GInterfaceInitFunc)(gpointer interface, gpointer interface_data);
 typedef void (*GInterfaceFinalizeFunc)();
 
+/** Contains information required to create instances of a class. */
 typedef struct _GTypeInfo {
 	guint16 class_size;
 	GBaseInitFunc base_init_func;
@@ -39,6 +40,7 @@ typedef struct _GTypeInfo {
 	gpointer *_unused;
 } GTypeInfo;
 
+/** Contains information about to (de-)initialize an interface. */
 typedef struct _GInterfaceInfo {
 	GInterfaceInitFunc interface_init_func;
 	GInterfaceFinalizeFunc interface_finalize_func;
@@ -53,25 +55,34 @@ typedef struct _GInterfaceInfo {
 
 typedef int GType;
 
+/** Cotains info about class hierarchy */
 typedef struct _GTypeClass {
 	GType type;
 	struct _GTypeClass *parent;
 	const GInterfaceInfo *info;
 } GTypeClass;
 
+/** Contains the type of an instance of a class. */
 typedef struct _GTypeInstance {
 	GType type;
 } GTypeInstance;
 
+/** Contains information about a type that specifies an interface. */
 typedef struct _GTypeInterface {
 	GType type;
 	struct _GTypeInterface *parent;
 } GTypeInterface;
 
+/** Contains information about a type that specifies an object. */
 typedef struct _GObjectClass {
 	GTypeClass base;
 } GObjectClass;
 
+/** Contains information about an instance of a class. 
+ * 
+ * This is the base class for all objects.
+ * It also includes reference counting.
+ */
 typedef struct _GObject {
 	GTypeInstance base;
 	int ref_count;
@@ -93,6 +104,7 @@ struct _GTypePool {
 	int last;
 	GTypeInfo pool[MAX_TYPES];
 	GTypeClass classes[MAX_TYPES];
+	const char *type_names[MAX_TYPES];
 } g_typePool = { .last = 0, .pool = {}, .classes = {} };
 
 typedef enum _GTypeFlags { TYPE_FLAG_NONE } GTypeFlags;
@@ -110,8 +122,11 @@ static GType g_type_register_static(GType parent, const gchar *type_name,
 				    const GTypeInfo *type_info,
 				    GTypeFlags flags)
 {
-	// Handle G_TYPE_OBJECT and G_TYPE_INTERFACE
-	g_assert(false);
+	g_typePool.pool[g_typePool.last] = *type_info;
+	g_typePool.classes[g_typePool.last].type = g_typePool.last;
+	g_typePool.type_names[g_typePool.last] = type_name;
+	g_typePool.classes[g_typePool.last].parent = &g_typePool.classes[parent];
+	return g_typePool.last++;
 }
 
 /** Adds an interface to a class. */
@@ -159,8 +174,8 @@ static void g_type_init()
 		.instance_init = 0,
 		._unused = 0
 	};
-    static const GTypeInfo g_interface_type_info = {
-        .class_size = sizeof(GObjectClass),
+	static const GTypeInfo g_interface_type_info = {
+		.class_size = sizeof(GObjectClass),
 		.base_init_func = 0,
 		.base_finalize_func = 0,
 		.class_init_func = 0,
@@ -170,15 +185,18 @@ static void g_type_init()
 		.preallocs = 0,
 		.instance_init = 0,
 		._unused = 0
-    };
+	};
 
+	g_typePool.pool[G_TYPE_TYPE] = g_type_class_type_info;
 	g_typePool.pool[G_TYPE_OBJECT] = g_object_type_info;
 	g_typePool.pool[G_TYPE_INTERFACE] = g_interface_type_info;
-	// TODO: Can we avoid specifying type here again, or maybe we can get rid of the other pool
+	// TODO: Maybe this can be avoided by looking at the address the class is stored at
+	g_typePool.classes[G_TYPE_TYPE].type = G_TYPE_TYPE;
 	g_typePool.classes[G_TYPE_OBJECT].type = G_TYPE_OBJECT;
 	g_typePool.classes[G_TYPE_INTERFACE].type = G_TYPE_INTERFACE;
 
-	g_typePool.classes[G_TYPE_OBJECT].parent = NULL;
+	g_typePool.classes[G_TYPE_TYPE].parent = NULL;
+	g_typePool.classes[G_TYPE_OBJECT].parent = G_TYPE_TYPE;
 	g_typePool.classes[G_TYPE_INTERFACE].parent = NULL;
 
 	g_typePool.last = G_TYPE_BUILTIN_COUNT;
@@ -255,6 +273,8 @@ g_type_check_instance_is_fundamentally_a(GTypeClass *instance, GType fundamental
 
 static void* g_object_new(GType type, const gchar *first_property_name, ...)
 {
+	// g_type_init() should be called before this function
+	assert(g_typePool.last >= G_TYPE_BUILTIN_COUNT);
 	GTypeClass *klass = &g_typePool.classes[type];
 	GObject *obj = g_malloc(g_typePool.pool[type].object_size);
 	g_assert(obj);
