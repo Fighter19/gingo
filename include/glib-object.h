@@ -59,6 +59,10 @@ typedef struct _GTypeClass {
 	const GInterfaceInfo *info;
 } GTypeClass;
 
+typedef struct _GTypeInstance {
+	GType type;
+} GTypeInstance;
+
 typedef struct _GTypeInterface {
 	GType type;
 	struct _GTypeInterface *parent;
@@ -69,6 +73,7 @@ typedef struct _GObjectClass {
 } GObjectClass;
 
 typedef struct _GObject {
+	GTypeInstance base;
 	int ref_count;
 } GObject;
 
@@ -94,6 +99,7 @@ typedef enum _GTypeFlags { TYPE_FLAG_NONE } GTypeFlags;
 
 enum BuiltinTypes
 {
+	G_TYPE_TYPE,
 	G_TYPE_OBJECT,
 	G_TYPE_INTERFACE,
 
@@ -129,6 +135,18 @@ static GTypeInterface *g_type_interface_peek_parent_actual(GTypeInterface *inter
 static void g_type_init()
 {
 	g_assert(g_typePool.last == 0);
+	static const GTypeInfo g_type_class_type_info = {
+		.class_size = sizeof(GTypeClass),
+		.base_init_func = 0,
+		.base_finalize_func = 0,
+		.class_init_func = 0,
+		.class_finalize_func = 0,
+		.class_data = 0,
+		.object_size = sizeof(GTypeInstance),
+		.preallocs = 0,
+		.instance_init = 0,
+		._unused = 0
+	};
 	static const GTypeInfo g_object_type_info = {
 		.class_size = sizeof(GObjectClass),
 		.base_init_func = 0,
@@ -240,6 +258,9 @@ static void* g_object_new(GType type, const gchar *first_property_name, ...)
 	GTypeClass *klass = &g_typePool.classes[type];
 	GObject *obj = g_malloc(g_typePool.pool[type].object_size);
 	g_assert(obj);
+	if (g_type_check_instance_is_fundamentally_a(klass, G_TYPE_TYPE)) {
+		obj->base.type = type;
+	}
 	if (g_type_check_instance_is_fundamentally_a(klass, G_TYPE_OBJECT)) {
 		obj->ref_count = 1;
 	}
